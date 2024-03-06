@@ -1,0 +1,14 @@
+name: QuestNPC
+version: '${project.version}'
+main: dev.potato.questnpc.QuestNPC
+api-version: '1.20'
+depend: [ProtocolLib]
+authors: [Potato]
+description: A simple plugin for spawning NPCs that give you quests!
+commands:
+  questnpc:
+    description: Spawns a quest NPC at the player's location
+    usage: /questnpc
+    aliases:
+      - qnpc
+      - qn
