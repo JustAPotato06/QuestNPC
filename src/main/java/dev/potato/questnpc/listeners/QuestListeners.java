@@ -26,7 +26,7 @@ public class QuestListeners implements Listener {
             questManager.completeQuest(player);
         } else {
             player.sendMessage(ChatColor.GREEN + "[QUEST NPC] You have killed " + ChatColor.GOLD + killQuest.getProgress() + ChatColor.GREEN + " " + killQuest.getEntityType().name().toLowerCase() + "s.");
-            player.sendMessage(ChatColor.YELLOW + "[QUEST NPC] You need to kill " + (killQuest.getAmountToKill() - killQuest.getProgress()) + " more " + killQuest.getEntityType().name().toLowerCase() + "s.");
+            player.sendMessage(ChatColor.YELLOW + "[QUEST NPC] You need to kill " + ChatColor.GOLD + (killQuest.getAmountToKill() - killQuest.getProgress()) + ChatColor.GREEN + " more " + killQuest.getEntityType().name().toLowerCase() + "s.");
         }
 
     }

@@ -7,33 +7,48 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.mojang.authlib.GameProfile;
+import dev.potato.questnpc.commands.BalanceCommand;
 import dev.potato.questnpc.commands.QuestNPCCommand;
+import dev.potato.questnpc.configuration.NPCConfig;
+import dev.potato.questnpc.listeners.NPCListeners;
 import dev.potato.questnpc.listeners.QuestListeners;
 import dev.potato.questnpc.menus.QuestMenu;
 import dev.potato.questnpc.utilities.NPCUtilities;
 import me.kodysimpson.simpapi.exceptions.MenuManagerException;
 import me.kodysimpson.simpapi.exceptions.MenuManagerNotSetupException;
 import me.kodysimpson.simpapi.menu.MenuManager;
+import net.milkbowl.vault.economy.Economy;
+import net.minecraft.server.level.ServerPlayer;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.List;
 
 
 /*
 KNOWN ISSUES:
 
-- Quest NPC only shows for the player that runs the command
-- There can only be 1 quest NPC
-- Currency earned does nothing
 - Item Quests aren't a thing
 
-NOTE: The chance that these will be fixed is very low. This plugin wasn't really meant for proper use, just for learning.
 */
 
 public final class QuestNPC extends JavaPlugin {
     private static QuestNPC plugin;
     private final NPCUtilities npcManager = NPCUtilities.getNpcManager();
+    private static Economy economy = null;
 
     public static QuestNPC getPlugin() {
         return plugin;
+    }
+
+    public static Economy getEconomy() {
+        return economy;
     }
 
     @Override
@@ -53,25 +68,78 @@ public final class QuestNPC extends JavaPlugin {
         // Simp API - Menus
         registerMenus();
 
+        // Vault
+        if (!setupEconomy()) {
+            Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "Quest NPC was disabled due to no Vault dependency found!");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         // Packet Listeners
         registerPacketListeners();
     }
 
+    @Override
+    public void onDisable() {
+        saveNPCs();
+    }
+
+    private void saveNPCs() {
+        FileConfiguration npcConfig = NPCConfig.get();
+        List<ServerPlayer> questNPCs = npcManager.getQuestNPCs();
+        for (int i = 0; i < questNPCs.size(); i++) {
+            ServerPlayer npc = questNPCs.get(i);
+
+            ConfigurationSection section = npcConfig.createSection("npc-" + i);
+            GameProfile gameProfile = npc.getGameProfile();
+            section.addDefault("uuid", gameProfile.getId().toString());
+            section.addDefault("display-name", gameProfile.getName());
+
+            ConfigurationSection locationSection = section.createSection("location");
+            Location npcLocation = npc.getBukkitEntity().getLocation();
+            locationSection.addDefault("x", npcLocation.getX());
+            locationSection.addDefault("y", npcLocation.getY());
+            locationSection.addDefault("z", npcLocation.getZ());
+            locationSection.addDefault("yaw", npcLocation.getYaw());
+            locationSection.addDefault("pitch", npcLocation.getPitch());
+        }
+        NPCConfig.save();
+    }
+
     private void registerConfiguration() {
-        getConfig().options().copyDefaults();
+        // Config.yml
+        getConfig().options().copyDefaults(true);
         saveDefaultConfig();
+
+        // NPCs.yml
+        NPCConfig.setup();
+        NPCConfig.get().options().copyDefaults(true);
+        NPCConfig.get().set("is-loaded", false);
+        NPCConfig.save();
     }
 
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new QuestListeners(), this);
+        getServer().getPluginManager().registerEvents(new NPCListeners(), this);
     }
 
     private void registerCommands() {
         getCommand("questnpc").setExecutor(new QuestNPCCommand());
+        if (getConfig().getBoolean("enable-balance-command")) {
+            getCommand("balance").setExecutor(new BalanceCommand());
+        }
     }
 
     private void registerMenus() {
         MenuManager.setup(getServer(), this);
+    }
+
+    private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) return false;
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) return false;
+        economy = rsp.getProvider();
+        return economy != null;
     }
 
     private void registerPacketListeners() {
@@ -96,7 +164,11 @@ public final class QuestNPC extends JavaPlugin {
                 }
 
                 // Checks
-                if (entityID != npcManager.getQuestNPCID()) return;
+                boolean isNPC = false;
+                for (ServerPlayer npc : npcManager.getQuestNPCs()) {
+                    if (entityID == npcManager.getQuestNPCID(npc.displayName)) isNPC = true;
+                }
+                if (!isNPC) return;
                 if (hand != EnumWrappers.Hand.MAIN_HAND || action != EnumWrappers.EntityUseAction.INTERACT) return;
 
                 getServer().getScheduler().runTask(plugin, () -> {

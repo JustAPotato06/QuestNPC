@@ -51,7 +51,7 @@ public class QuestMenu extends Menu {
                     }
                 } else {
                     questManager.giveQuest(p, quest);
-                    p.sendMessage(ColorTranslator.translateColorCodes("&aYou have been given the quest &e\"" + quest.getName() + "\"&a!"));
+                    p.sendMessage(ColorTranslator.translateColorCodes("&aYou have been given the quest &e" + quest.getName() + "&a!"));
                     p.sendMessage(ColorTranslator.translateColorCodes("&aTo complete this quest, you must &e" + quest.getDescription() + "&a!"));
                 }
                 p.closeInventory();
@@ -77,5 +77,6 @@ public class QuestMenu extends Menu {
                 inventory.addItem(item);
             }
         });
+        setFillerGlass();
     }
 }

@@ -2,7 +2,11 @@ name: QuestNPC
 version: '${project.version}'
 main: dev.potato.questnpc.QuestNPC
 api-version: '1.20'
-depend: [ProtocolLib]
+depend:
+  - ProtocolLib
+  - Vault
+soft-depend:
+  - EssentialsX
 authors: [Potato]
 description: A simple plugin for spawning NPCs that give you quests!
 commands:
@@ -11,4 +15,8 @@ commands:
     usage: /questnpc
     aliases:
       - qnpc
-      - qn
+  balance:
+    description: Shows the player their current balance
+    usage: /balance
+    aliases:
+      - bal

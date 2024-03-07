@@ -1,15 +1,24 @@
+# Toggles the /balance command
+# Useful if you have other plugins that use Vault that already have a balance command
+enable-balance-command: true
+
+# Here is where all of your quests are held
 quests:
+  # In this category, KILL quests are stored
+  # Kill quests involve needing to kill a certain amount of entities to complete the quest
   kill:
-    quest1:
-      name: Zombie Slayer
-      description: Kill a zombie
-      reward: 100
-      target:
-        type: ZOMBIE
-        count: 1
-    quest2:
+    # Here are some examples (kill quests must follow this format)
+    zombie-slayer: # Quest ID - Can be whatever you'd like, but make it descriptive to the quest
+      name: Zombie Slayer # Name - This will be displayed on the quest menu
+      description: Kill a zombie! # Description - This will also be displayed on the quest menu
+      reward: 100 # Reward - How much money they get for the quest
+      target: # This category MUST be named target
+        type: ZOMBIE # Type - The type of entity, in all caps, that the player needs to kill (use underscores instead of spaces if name is multiple words long)
+        count: 1 # Count - How many of this entity the player needs to kill
+    # With everything set up, your kill quests should look like this:
+    genocide:
       name: Genocide
-      description: Kill 5 villagers
+      description: Kill 5 villagers!
       reward: 420
       target:
         type: VILLAGER

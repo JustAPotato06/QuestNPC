@@ -29,7 +29,8 @@ public class QuestUtilities {
         Quest quest = activeQuests.get(player);
         long timeTaken = System.currentTimeMillis() - quest.getWhenStarted();
         String timeTakenString = String.format("%02d:%02d", timeTaken / 60000, (timeTaken % 60000) / 1000);
-        player.sendMessage(ColorTranslator.translateColorCodes("&a[QUEST NPC] You completed the quest &7\"" + quest.getName() + "\"&a in " + timeTakenString + " seconds!"));
+        QuestNPC.getEconomy().depositPlayer(player, quest.getRewardAmount());
+        player.sendMessage(ColorTranslator.translateColorCodes("&a[QUEST NPC] You completed the quest &7" + quest.getName() + "&a in " + timeTakenString + " seconds!"));
         player.sendMessage(ColorTranslator.translateColorCodes("&a[QUEST NPC] You received " + quest.getRewardAmount() + " dollars."));
         activeQuests.remove(player);
     }

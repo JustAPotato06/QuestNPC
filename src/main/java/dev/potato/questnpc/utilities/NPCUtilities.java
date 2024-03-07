@@ -18,27 +18,37 @@ import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class NPCUtilities {
     private static final NPCUtilities npcManager = new NPCUtilities();
 
-    private ServerPlayer questNPC;
+    private List<ServerPlayer> questNPCs = new ArrayList<>();
 
     public static NPCUtilities getNpcManager() {
         return npcManager;
     }
 
-    public ServerPlayer getQuestNPC() {
-        return questNPC;
+    public List<ServerPlayer> getQuestNPCs() {
+        return questNPCs;
     }
 
-    public int getQuestNPCID() {
-        ServerPlayer npc = npcManager.getQuestNPC();
-        return npc == null ? 0 : npc.getId();
+    public void setQuestNPCs(List<ServerPlayer> questNPCs) {
+        this.questNPCs = questNPCs;
     }
 
-    public void spawnQuestNPC(Player p) {
+    public int getQuestNPCID(String displayName) {
+        List<ServerPlayer> questNPCs = npcManager.getQuestNPCs();
+        for (ServerPlayer npc : questNPCs) {
+            if (!npc.displayName.equalsIgnoreCase(displayName)) continue;
+            return npc.getId();
+        }
+        return 0;
+    }
+
+    public void spawnQuestNPC(Player p, String displayName) {
         // Player NMS Data
         CraftPlayer craftPlayer = (CraftPlayer) p;
         ServerPlayer serverPlayer = craftPlayer.getHandle();
@@ -46,33 +56,91 @@ public class NPCUtilities {
         // NPC Data
         MinecraftServer server = serverPlayer.getServer();
         ServerLevel level = serverPlayer.serverLevel().getLevel();
-        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), "Jeff");
+        GameProfile gameProfile = new GameProfile(UUID.randomUUID(), displayName);
         ClientInformation clientInformation = ClientInformation.createDefault();
 
         // Creating the NPC
-        questNPC = new ServerPlayer(server, level, gameProfile, clientInformation);
-
-        // NPC Position & Location
-        Location playerLocation = p.getLocation();
-        questNPC.setPos(playerLocation.getX(), playerLocation.getY(), playerLocation.getZ());
+        assert server != null;
+        ServerPlayer npc = new ServerPlayer(server, level, gameProfile, clientInformation);
 
         // NPC Connection
-        SynchedEntityData npcData = questNPC.getEntityData();
+        SynchedEntityData npcData = npc.getEntityData();
         npcData.set(new EntityDataAccessor<>(17, EntityDataSerializers.BYTE), (byte) 127);
         try {
-            Field field = questNPC.getClass().getDeclaredField("c");
+            Field field = npc.getClass().getDeclaredField("c");
             field.setAccessible(true);
-            field.set(questNPC, serverPlayer.connection);
+            field.set(npc, serverPlayer.connection);
         } catch (Exception exception) {
             Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "There was an error establishing a non-null connection to the NPC!");
         }
 
-        // NPC Show Packets
-        ServerGamePacketListenerImpl connection = serverPlayer.connection;
-        connection.send(new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, questNPC));
-        connection.send(new ClientboundAddEntityPacket(questNPC));
+        // NPC Position & Location
+        Location playerLocation = p.getLocation();
+        npc.forceSetPositionRotation(playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
 
+        // Packets
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            sendShowNPCPackets(player, npc);
+        });
+
+        // Add NPC to Quest NPC List
+        questNPCs.add(npc);
+
+        // Notify the player
         p.sendMessage(ChatColor.GREEN + "[QUEST NPC] You have created a new quest NPC!");
         p.sendMessage(ChatColor.GREEN + "[QUEST NPC] Right click to talk to him!");
+    }
+
+    public void loadQuestNPC(Player p, String uuid, String displayName, double x, double y, double z, float yaw, float pitch) {
+        // Player NMS Data
+        CraftPlayer craftPlayer = (CraftPlayer) p;
+        ServerPlayer serverPlayer = craftPlayer.getHandle();
+
+        // NPC Data
+        MinecraftServer server = serverPlayer.getServer();
+        ServerLevel level = serverPlayer.serverLevel().getLevel();
+        GameProfile gameProfile = new GameProfile(UUID.fromString(uuid), displayName);
+        ClientInformation clientInformation = ClientInformation.createDefault();
+
+        // Creating the NPC
+        assert server != null;
+        ServerPlayer npc = new ServerPlayer(server, level, gameProfile, clientInformation);
+
+        // NPC Connection
+        SynchedEntityData npcData = npc.getEntityData();
+        npcData.set(new EntityDataAccessor<>(17, EntityDataSerializers.BYTE), (byte) 127);
+        try {
+            Field field = npc.getClass().getDeclaredField("c");
+            field.setAccessible(true);
+            field.set(npc, serverPlayer.connection);
+        } catch (Exception exception) {
+            Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "There was an error establishing a non-null connection to the NPC!");
+        }
+
+        // NPC Position & Location
+        npc.forceSetPositionRotation(x, y, z, yaw, pitch);
+
+        // Packets
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            sendShowNPCPackets(player, npc);
+        });
+
+        // Add NPC to Quest NPC List
+        questNPCs.add(npc);
+    }
+
+    public void showQuestNPCs(Player player) {
+        for (ServerPlayer npc : questNPCs) {
+            sendShowNPCPackets(player, npc);
+        }
+    }
+
+    private void sendShowNPCPackets(Player player, ServerPlayer npc) {
+        // NPC Show Packets
+        CraftPlayer craftPlayer = (CraftPlayer) player;
+        ServerPlayer serverPlayer = craftPlayer.getHandle();
+        ServerGamePacketListenerImpl connection = serverPlayer.connection;
+        connection.send(new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, npc));
+        connection.send(new ClientboundAddEntityPacket(npc));
     }
 }
