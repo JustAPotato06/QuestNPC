@@ -4,4 +4,4 @@ A plugin that allows you to create simple quest NPCs that will give your players
 
 The quests are customizable, easy to setup, and self automating!
 
-This plugin connects and uses Vault for its reward currency.
+This plugin connects to and uses Vault for its reward currency.
