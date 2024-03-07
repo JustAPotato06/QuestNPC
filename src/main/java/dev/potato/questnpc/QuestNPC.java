@@ -35,6 +35,7 @@ import java.util.List;
 KNOWN ISSUES:
 
 - Item Quests aren't a thing
+- NPC facing mechanics don't work yet
 
 */
 
