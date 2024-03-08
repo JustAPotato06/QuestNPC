@@ -1,5 +1,7 @@
-NOTE: This plugin is not intended for serious use.
+This is Quest NPC!
 
-As of right now, there are a lot of missing key features and fixes that need to happen before then.
+A plugin that allows you to create simple quest NPCs that will give your players quests
 
-This plugin is mainly for educational and reference purposes.
+The quests are customizable, easy to setup, and self automating!
+
+This plugin connects to and uses Vault for its reward currency.
