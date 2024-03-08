@@ -1,5 +1,6 @@
 package dev.potato.questnpc.menus;
 
+import dev.potato.questnpc.models.ItemQuest;
 import dev.potato.questnpc.models.KillQuest;
 import dev.potato.questnpc.models.Quest;
 import dev.potato.questnpc.utilities.QuestUtilities;
@@ -57,6 +58,25 @@ public class QuestMenu extends Menu {
                 p.closeInventory();
                 break;
             }
+        } else if (currentItem.getType() == Material.DIAMOND_PICKAXE) {
+            String questName = ChatColor.stripColor(currentItem.getItemMeta().getDisplayName());
+            for (Quest quest : questManager.getAvailableQuests()) {
+                if (!quest.getName().equalsIgnoreCase(questName)) continue;
+                Quest activeQuest = questManager.getActiveQuest(p);
+                if (activeQuest != null) {
+                    if (activeQuest.getName().equalsIgnoreCase(questName)) {
+                        p.sendMessage(ChatColor.RED + "[QUEST NPC] You already have this quest going!");
+                    } else {
+                        p.sendMessage(ChatColor.RED + "[QUEST NPC] You already have an active quest going!");
+                    }
+                } else {
+                    questManager.giveQuest(p, quest);
+                    p.sendMessage(ColorTranslator.translateColorCodes("&aYou have been given the quest &e" + quest.getName() + "&a!"));
+                    p.sendMessage(ColorTranslator.translateColorCodes("&aTo complete this quest, you must &e" + quest.getDescription() + "&a!"));
+                }
+                p.closeInventory();
+                break;
+            }
         }
     }
 
@@ -72,6 +92,17 @@ public class QuestMenu extends Menu {
                         ColorTranslator.translateColorCodes("&5" + killQuest.getDescription()),
                         " ",
                         "&7Reward: &a$" + killQuest.getRewardAmount(),
+                        " ",
+                        isOnQuest ? "&cYou are on this quest!" : "&aClick to accept!");
+                inventory.addItem(item);
+            } else if (quest instanceof ItemQuest itemQuest) {
+                Quest playersQuest = questManager.getActiveQuest(p);
+                boolean isOnQuest = playersQuest != null && playersQuest.getName().equalsIgnoreCase(quest.getName());
+                item = makeItem(Material.DIAMOND_PICKAXE,
+                        ColorTranslator.translateColorCodes("&6&l" + itemQuest.getName()),
+                        ColorTranslator.translateColorCodes("&5" + itemQuest.getDescription()),
+                        " ",
+                        "&7Reward: &a$" + itemQuest.getRewardAmount(),
                         " ",
                         isOnQuest ? "&cYou are on this quest!" : "&aClick to accept!");
                 inventory.addItem(item);

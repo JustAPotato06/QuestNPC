@@ -1,8 +1,11 @@
 package dev.potato.questnpc.utilities;
 
 import com.mojang.authlib.GameProfile;
+import dev.potato.questnpc.configuration.NPCConfig;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -14,18 +17,19 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class NPCUtilities {
     private static final NPCUtilities npcManager = new NPCUtilities();
 
     private List<ServerPlayer> questNPCs = new ArrayList<>();
+    private Map<ServerPlayer, Vector> npcDirectionVectors = new HashMap<>();
 
     public static NPCUtilities getNpcManager() {
         return npcManager;
@@ -33,6 +37,10 @@ public class NPCUtilities {
 
     public List<ServerPlayer> getQuestNPCs() {
         return questNPCs;
+    }
+
+    public Map<ServerPlayer, Vector> getNpcDirectionVectors() {
+        return npcDirectionVectors;
     }
 
     public void setQuestNPCs(List<ServerPlayer> questNPCs) {
@@ -60,7 +68,6 @@ public class NPCUtilities {
         ClientInformation clientInformation = ClientInformation.createDefault();
 
         // Creating the NPC
-        assert server != null;
         ServerPlayer npc = new ServerPlayer(server, level, gameProfile, clientInformation);
 
         // NPC Connection
@@ -77,10 +84,11 @@ public class NPCUtilities {
         // NPC Position & Location
         Location playerLocation = p.getLocation();
         npc.forceSetPositionRotation(playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
+        npcDirectionVectors.put(npc, playerLocation.getDirection());
 
         // Packets
         Bukkit.getOnlinePlayers().forEach(player -> {
-            sendShowNPCPackets(player, npc);
+            sendShowNPCPackets(player, npc, playerLocation.getDirection());
         });
 
         // Add NPC to Quest NPC List
@@ -91,7 +99,7 @@ public class NPCUtilities {
         p.sendMessage(ChatColor.GREEN + "[QUEST NPC] Right click to talk to him!");
     }
 
-    public void loadQuestNPC(Player p, String uuid, String displayName, double x, double y, double z, float yaw, float pitch) {
+    public void loadQuestNPC(Player p, String uuid, String displayName, double x, double y, double z, float yaw, float pitch, Vector direction) {
         // Player NMS Data
         CraftPlayer craftPlayer = (CraftPlayer) p;
         ServerPlayer serverPlayer = craftPlayer.getHandle();
@@ -119,10 +127,11 @@ public class NPCUtilities {
 
         // NPC Position & Location
         npc.forceSetPositionRotation(x, y, z, yaw, pitch);
+        npcDirectionVectors.put(npc, direction);
 
         // Packets
         Bukkit.getOnlinePlayers().forEach(player -> {
-            sendShowNPCPackets(player, npc);
+            sendShowNPCPackets(player, npc, direction);
         });
 
         // Add NPC to Quest NPC List
@@ -130,17 +139,26 @@ public class NPCUtilities {
     }
 
     public void showQuestNPCs(Player player) {
+        FileConfiguration npcConfig = NPCConfig.get();
         for (ServerPlayer npc : questNPCs) {
-            sendShowNPCPackets(player, npc);
+            sendShowNPCPackets(player, npc, npcDirectionVectors.get(npc));
         }
     }
 
-    private void sendShowNPCPackets(Player player, ServerPlayer npc) {
-        // NPC Show Packets
+    private void sendShowNPCPackets(Player player, ServerPlayer npc, Vector direction) {
         CraftPlayer craftPlayer = (CraftPlayer) player;
         ServerPlayer serverPlayer = craftPlayer.getHandle();
         ServerGamePacketListenerImpl connection = serverPlayer.connection;
         connection.send(new ClientboundPlayerInfoUpdatePacket(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, npc));
         connection.send(new ClientboundAddEntityPacket(npc));
+
+        Location npcLocation = npc.getBukkitEntity().getLocation();
+        npcLocation.setDirection(direction);
+        float yaw = npcLocation.getYaw();
+        float pitch = npcLocation.getPitch();
+        byte yawByte = (byte) ((yaw % 360) * 256 / 360);
+        byte pitchByte = (byte) ((pitch % 360) * 256 / 360);
+        connection.send(new ClientboundRotateHeadPacket(npc, yawByte));
+        connection.send(new ClientboundMoveEntityPacket.Rot(npc.getBukkitEntity().getEntityId(), yawByte, pitchByte, false));
     }
 }

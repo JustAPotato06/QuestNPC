@@ -5,6 +5,7 @@ import org.bukkit.Material;
 public class ItemQuest extends Quest {
     private Material material;
     private int amountToCollect;
+    private int progress = 0;
 
     public ItemQuest(String name, String description, double rewardAmount, Material material, int amountToCollect) {
         super(name, description, rewardAmount);
@@ -26,5 +27,13 @@ public class ItemQuest extends Quest {
 
     public void setAmountToCollect(int amountToCollect) {
         this.amountToCollect = amountToCollect;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    public void setProgress(int progress) {
+        this.progress = progress;
     }
 }

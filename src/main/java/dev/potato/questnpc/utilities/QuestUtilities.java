@@ -1,9 +1,11 @@
 package dev.potato.questnpc.utilities;
 
 import dev.potato.questnpc.QuestNPC;
+import dev.potato.questnpc.models.ItemQuest;
 import dev.potato.questnpc.models.KillQuest;
 import dev.potato.questnpc.models.Quest;
 import me.kodysimpson.simpapi.colors.ColorTranslator;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -18,6 +20,10 @@ public class QuestUtilities {
 
     public static QuestUtilities getQuestManager() {
         return questManager;
+    }
+
+    public Quest getActiveQuest(Player player) {
+        return activeQuests.get(player);
     }
 
     public void giveQuest(Player player, Quest quest) {
@@ -35,11 +41,6 @@ public class QuestUtilities {
         activeQuests.remove(player);
     }
 
-    // Returns null if the player has no quests
-    public Quest getActiveQuest(Player player) {
-        return activeQuests.get(player);
-    }
-
     public List<Quest> getAvailableQuests() {
         List<Quest> availableQuests = new ArrayList<>();
         FileConfiguration config = QuestNPC.getPlugin().getConfig();
@@ -54,6 +55,19 @@ public class QuestUtilities {
                     int count = config.getInt("quests.kill." + questName + ".target.count");
 
                     Quest quest = new KillQuest(name, description, reward, entityType, count);
+                    availableQuests.add(quest);
+                });
+
+        config.getConfigurationSection("quests.item").getKeys(false)
+                .forEach(questName -> {
+                    String name = config.getString("quests.item." + questName + ".name");
+                    String description = config.getString("quests.item." + questName + ".description");
+                    double reward = config.getDouble("quests.item." + questName + ".reward");
+                    String materialTypeString = config.getString("quests.item." + questName + ".target.material");
+                    Material material = Material.getMaterial(materialTypeString);
+                    int count = config.getInt("quests.item." + questName + ".target.count");
+
+                    Quest quest = new ItemQuest(name, description, reward, material, count);
                     availableQuests.add(quest);
                 });
 

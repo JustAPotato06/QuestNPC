@@ -5,7 +5,7 @@ import org.bukkit.entity.EntityType;
 public class KillQuest extends Quest {
     private EntityType entityType;
     private int amountToKill;
-    private int progress = 0; // Represents the amount of entities killed
+    private int progress = 0;
 
     public KillQuest(String name, String description, double rewardAmount, EntityType entityType, int amountToKill) {
         super(name, description, rewardAmount);

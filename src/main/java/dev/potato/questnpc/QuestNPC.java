@@ -27,17 +27,9 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 import java.util.List;
-
-
-/*
-KNOWN ISSUES:
-
-- Item Quests aren't a thing
-- NPC facing mechanics don't work yet
-
-*/
 
 public final class QuestNPC extends JavaPlugin {
     private static QuestNPC plugin;
@@ -103,6 +95,12 @@ public final class QuestNPC extends JavaPlugin {
             locationSection.addDefault("z", npcLocation.getZ());
             locationSection.addDefault("yaw", npcLocation.getYaw());
             locationSection.addDefault("pitch", npcLocation.getPitch());
+
+            ConfigurationSection directionSection = section.createSection("direction");
+            Vector direction = npcManager.getNpcDirectionVectors().get(npc);
+            directionSection.addDefault("x", direction.getX());
+            directionSection.addDefault("y", direction.getY());
+            directionSection.addDefault("z", direction.getZ());
         }
         NPCConfig.save();
     }

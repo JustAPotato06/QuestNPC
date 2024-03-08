@@ -23,3 +23,13 @@ quests:
       target:
         type: VILLAGER
         count: 5
+  # Item quests involve needing to collect a certain amount of items to complete the quest
+  item:
+    # Here are some examples (item quests must follow this format)
+    diamond-collector:
+      name: Diamond Collector
+      description: Collect 24 diamonds!
+      reward: 1000
+      target:
+        material: DIAMOND
+        count: 24
